@@ -47,34 +47,63 @@ def agent1(board, target):
     for i in range(dim):
         for j in range(dim):
             beliefs[i,j] = 1/(dim*dim)
-    print("\n",beliefs)
+    print("Beliefs: \n",beliefs)
 
-    moves = 0
+    moves = 1
     query = [random.randint(0, dim-1),random.randint(0, dim-1)]
-    
-    while query != target:
-        moves += 1
-        
-        prob = beliefs[query[0], query[1]]
-        terrain = board[query[0], query[1]]
+    print("\nQuery: ", query)
+    prob = beliefs[query[0], query[1]]
+    terrain = board[query[0], query[1]]
+    found = False
 
+    if terrain == 0:
+        found = random.randint(1, 10) > 1
+    elif terrain == 1:
+        found = random.randint(1, 10) > 3
+    elif terrain == 2:
+        found = random.randint(1, 10) > 7
+    elif terrain == 3:
+        found = random.randint(1, 10) > 9
+
+    targetfound = (query == target) and found
+    
+    while not targetfound:
         # update probability on found cell
         beliefs[query[0], query[1]] = getProbabilityOnFail(prob, terrain)
 
         # update probabliities on rest of cells
         # idk how to do this yet
+        print("New Beliefs:\n", beliefs)
         
         # query = new query
         # not like this tho
         query = [random.randint(0, dim-1),random.randint(0, dim-1)]
+        print("\nQuery: ", query)
+        prob = beliefs[query[0], query[1]]
+        terrain = board[query[0], query[1]]
+        moves += 1
+        found = False
+
+        # find target with a given probability
+        if terrain == 0:
+            found = random.randint(1, 10) > 1
+        elif terrain == 1:
+            found = random.randint(1, 10) > 3
+        elif terrain == 2:
+            found = random.randint(1, 10) > 7
+        elif terrain == 3:
+            found = random.randint(1, 10) > 9
+
+        targetfound = (query == target) and found
     
     return moves
     
 
-dimension = 4
+dimension = 2
 board = np.zeros((dimension, dimension))
 board = generateBoard(dimension, board)
 target = [random.randint(0, dimension-1), random.randint(0, dimension-1)]
 
 print(board)
+print("Target: ", target, "\n")
 print(agent1(board, target))
