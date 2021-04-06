@@ -56,8 +56,27 @@ def getNeighbors(board, cell):
     return neighbors
 
 
-def getFindBoard(board):
-    return 0
+def getFindBoard(board, beliefs):
+    find = beliefs.copy()
+    dim = len(board[0])
+    probNeg = 0
+
+    for i in range(dim):
+        for j in range(dim):
+            terrain = board[i,j]
+            
+            if terrain == 0:
+                probNeg = .1
+            elif terrain == 1:
+                probNeg = .3
+            elif terrain == 2:
+                probNeg = .7
+            elif terrain == 3:
+                probNeg = .9
+            
+            find[i,j] = beliefs[i,j] * (1-probNeg)
+    
+    return find
 
 
 def agent1(board, target):
@@ -71,6 +90,7 @@ def agent1(board, target):
     print("Beliefs: \n",beliefs)
 
     moves = 1
+    distanceTravelled = 0
 
     # get initial query at random
     query = [random.randint(0, dim-1),random.randint(0, dim-1)]
@@ -114,17 +134,37 @@ def agent1(board, target):
         ''' get new query '''
         # query from neighbor with highest probability of having target
         maxProbability = 0
+        cell = query
+        ''' immediate neighbors version
         for cell in getNeighbors(beliefs, query):
             if beliefs[cell[0], cell[1]] > maxProbability:
                 maxProbability = beliefs[cell[0], cell[1]]
                 query = cell
-                
+        '''
+        for i in range(dim):
+            for j in range(dim):
+                if beliefs[i, j] > maxProbability:
+                    maxProbability = beliefs[i, j]
+                    cell = [i, j]
+                elif beliefs[i, j] == maxProbability:
+                    dist1 = abs(query[0] - cell[0]) + abs(query[1] - cell[1])
+                    dist2 = abs(query[0] - i) + abs(query[1] - j)
+
+                    if dist2 < dist1:
+                        cell = [i, j]
+                    elif dist2 == dist1 and random.randint(0, 1) == 0:
+                        cell = [i, j]
+
+        dist = abs(query[0] - cell[0]) + abs(query[1] - cell[1])
+        query = cell
         print("\nQuery: ", query)
+        print("Distance: ", dist)
 
         # get probability at cell & terrain type
         prob = beliefs[query[0], query[1]]
         terrain = (int)(board[query[0], query[1]])
         moves += 1
+        distanceTravelled += dist
         found = False
 
         # find target with probability based on terrain
@@ -139,12 +179,11 @@ def agent1(board, target):
 
         targetfound = (query == target) and found
     
-    return moves
+    return moves, distanceTravelled
 
 
 '''
 Agent 2 is exactly like agent 1 except it's criteria for choosing a new cell to query
-Complete the getFindBoard() function to produce a board of probabilies of FINDING the target
 '''
 def agent2(board, target):
     dim = len(board[0])
@@ -157,6 +196,7 @@ def agent2(board, target):
     print("Beliefs: \n",beliefs)
 
     moves = 1
+    distanceTravelled = 0
 
     # get initial query at random
     query = [random.randint(0, dim-1),random.randint(0, dim-1)]
@@ -199,21 +239,42 @@ def agent2(board, target):
 
         ''' get new query '''
         # generate find probability board
-        findBoard = getFindBoard(board)
+        findBoard = getFindBoard(board, beliefs)
+        print("Find Prob:\n", findBoard)
         
         # query from neighbor with highest probability of FINDING target
         maxProbability = 0
+        cell = query
+        '''
         for cell in getNeighbors(findBoard, query):
             if findBoard[cell[0], cell[1]] > maxProbability:
                 maxProbability = findBoard[cell[0], cell[1]]
                 query = cell
+        '''
+        for i in range(dim):
+            for j in range(dim):
+                if findBoard[i, j] > maxProbability:
+                    maxProbability = findBoard[i, j]
+                    cell = [i, j]
+                elif findBoard[i, j] == maxProbability:
+                    dist1 = abs(query[0] - cell[0]) + abs(query[1] - cell[1])
+                    dist2 = abs(query[0] - i) + abs(query[1] - j)
+
+                    if dist2 < dist1:
+                        cell = [i, j]
+                    elif dist2 == dist1 and random.randint(0, 1) == 0:
+                        cell = [i, j]
                 
+        dist = abs(query[0] - cell[0]) + abs(query[1] - cell[1])
+        query = cell
         print("\nQuery: ", query)
+        print("Distance: ", dist)
 
         # get probability at cell & terrain type
         prob = beliefs[query[0], query[1]]
         terrain = (int)(board[query[0], query[1]])
         moves += 1
+        distanceTravelled += dist
         found = False
 
         # find target with probability based on terrain
@@ -228,14 +289,30 @@ def agent2(board, target):
 
         targetfound = (query == target) and found
     
-    return moves
+    return moves, distanceTravelled
+
+def agent3(board, target):
+
+    '''
+    Both agents are kinda shit
+    hopefully this one doesn't disappoint
+    '''
+
+    return 0
     
 
-dimension = 4
+dimension = 3
 board = np.zeros((dimension, dimension))
 board = generateBoard(dimension, board)
 target = [random.randint(0, dimension-1), random.randint(0, dimension-1)]
 
 print(board)
 print("Target: ", target, "\n")
-print(agent1(board, target))
+
+a1moves, a1dist = agent1(board, target)
+print("\n\n")
+a2moves, a2dist = agent2(board, target)
+
+print("\nagent1 Moves: ", a1moves, "\nagent2 Moves: ", a2moves)
+print("\nagent1 Distance: ", a1dist, "\nagent2 Distance: ", a2dist)
+print("\nagent1 Final Score: ", a1moves+a1dist, "\nagent2 Final Score: ", a2moves+a2dist)
