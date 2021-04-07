@@ -22,22 +22,58 @@ def generateBoard(dim, board):
             
     return board
 
-
-# calculate new probality given curr probability and terrain type
-def getProbabilityOnFail(p, terrain):
-    probNeg = 0
+# get false negative probabilty for a terrain
+def getFalseNegative(terrain):
+    falseNeg = 0
     if terrain == 0:
-        probNeg = .1
+        falseNeg = .1
     elif terrain == 1:
-        probNeg = .3
+        falseNeg = .3
     elif terrain == 2:
-        probNeg = .7
+        falseNeg = .7
     elif terrain == 3:
-        probNeg = .9
+        falseNeg = .9
 
-    P = (p*probNeg) / ((p*probNeg) + (1-p))
-    denom = (p*probNeg) + (1-p)
-    return P, denom
+    return falseNeg
+    
+# calculate probability of getting a fail at a cell
+def getProbabilityOfFail(p, terrain):
+    falseNeg = getFalseNegative(terrain)
+    
+    probability_fail = (p*falseNeg) + (1-p)
+    return probability_fail
+    
+
+# calculate P(in J | fail J)
+def ProbJ_FailJ(p, terrain):
+    falseNeg = getFalseNegative(terrain)
+
+    denominator = getProbabilityOfFail(p, terrain)
+    probability = (p*falseNeg) / denominator
+    return probability
+
+# calculate P(in I | fail J)
+def ProbI_FailJ(pi, pj, terraini, terrainj):
+    falseNeg = getFalseNegative(terraini)
+
+    denominator = getProbabilityOfFail(pj, terrainj)
+    probability = pi / denominator
+    return probability
+
+# calculate P(Observations)
+def UpdateBoardSimulation(cell, simulatedBeliefs, board):
+    dim = len(simulatedBeliefs[0])
+    
+    # update rest of cells probabillity -> create new simulatedBeliefs
+    for i in range(dim):
+        for j in range(dim):
+            if not [i,j] == cell:
+                simulatedBeliefs[i, j] = ProbI_FailJ(simulatedBeliefs[i, j], simulatedBeliefs[cell[0], cell[1]], board[i, j], board[cell[0], cell[1]])
+
+    simulatedBeliefs[cell[0], cell[1]] = ProbJ_FailJ(simulatedBeliefs[cell[0], cell[1]], board[cell[0], cell[1]])
+
+    print("Simulated Beliefs:\n", simulatedBeliefs)
+    return simulatedBeliefs
 
 
 def getNeighbors(board, cell):
@@ -59,27 +95,20 @@ def getNeighbors(board, cell):
 def getFindBoard(board, beliefs):
     find = beliefs.copy()
     dim = len(board[0])
-    probNeg = 0
 
     for i in range(dim):
         for j in range(dim):
             terrain = board[i,j]
             
-            if terrain == 0:
-                probNeg = .1
-            elif terrain == 1:
-                probNeg = .3
-            elif terrain == 2:
-                probNeg = .7
-            elif terrain == 3:
-                probNeg = .9
+            falseNeg = getFalseNegative(terrain)
             
-            find[i,j] = beliefs[i,j] * (1-probNeg)
+            find[i,j] = beliefs[i,j] * (1-falseNeg)
     
     return find
 
 
 def agent1(board, target):
+    print("\n-------- AGENT 1 --------\n")
     dim = len(board[0])
 
     # create initial probablity grid
@@ -89,6 +118,7 @@ def agent1(board, target):
             beliefs[i,j] = 1/(dim*dim)
     print("Beliefs: \n",beliefs)
 
+    Observations = []
     moves = 1
     distanceTravelled = 0
 
@@ -115,21 +145,18 @@ def agent1(board, target):
 
     # loop and continue querying
     while not targetfound:
+        Observations.append([query[0], query[1]])
         
         # update probability on found cell
-        print("Prob: ", prob, "Terrain: ", terrain)
-        beliefs[query[0], query[1]], denominator = getProbabilityOnFail(prob, terrain)
+        print("Prob: ", prob, "Terrain: ", terrain, "\nObservations: ", Observations)
 
-        # update rest of cells probabillity
-        for i in range(dim):
-            for j in range(dim):
-                if not [i,j] == query:
-                    prob_i = beliefs[i, j]
-                    beliefs[i, j] = prob_i / denominator
-
+        # update all cells probabillity
+        simulatedBeliefs = beliefs.copy()
+        for cell in Observations:
+            simulatedBeliefs = UpdateBoardSimulation(cell, simulatedBeliefs, board)
+                
+        beliefs = simulatedBeliefs
         print("New Beliefs:\n", beliefs)
-
-
 
         ''' get new query '''
         # query from neighbor with highest probability of having target
@@ -186,6 +213,7 @@ def agent1(board, target):
 Agent 2 is exactly like agent 1 except it's criteria for choosing a new cell to query
 '''
 def agent2(board, target):
+    print("\n-------- AGENT 2 --------\n")
     dim = len(board[0])
 
     # create initial probablity grid
@@ -195,6 +223,7 @@ def agent2(board, target):
             beliefs[i,j] = 1/(dim*dim)
     print("Beliefs: \n",beliefs)
 
+    Observations = []
     moves = 1
     distanceTravelled = 0
 
@@ -221,18 +250,17 @@ def agent2(board, target):
 
     # loop and continue querying
     while not targetfound:
+        Observations.append([query[0], query[1]])
         
         # update probability on found cell
-        print("Prob: ", prob, "Terrain: ", terrain)
-        beliefs[query[0], query[1]], denominator = getProbabilityOnFail(prob, terrain)
-
-        # update rest of cells probabillity
-        for i in range(dim):
-            for j in range(dim):
-                if not [i,j] == query:
-                    prob_i = beliefs[i, j]
-                    beliefs[i, j] = prob_i / denominator
-
+        print("Prob: ", prob, "Terrain: ", terrain, "\nObservations: ", Observations)
+        
+        # update all cells probabillity
+        simulatedBeliefs = beliefs.copy()
+        for cell in Observations:
+            simulatedBeliefs = UpdateBoardSimulation(cell, simulatedBeliefs, board)
+                
+        beliefs = simulatedBeliefs
         print("New Beliefs:\n", beliefs)
 
 
@@ -291,6 +319,7 @@ def agent2(board, target):
     
     return moves, distanceTravelled
 
+
 def agent3(board, target):
 
     '''
@@ -301,7 +330,7 @@ def agent3(board, target):
     return 0
     
 
-dimension = 3
+dimension = 2
 board = np.zeros((dimension, dimension))
 board = generateBoard(dimension, board)
 target = [random.randint(0, dimension-1), random.randint(0, dimension-1)]
