@@ -373,7 +373,8 @@ def agent3(board, target):
         # update optimal matrix to determine which cell to search next based on belief and distance
         for i in range(dim):
             for j in range(dim):
-                optimal[i][j] = beliefs[i][j] / distances[i][j]
+                if not [i, j] == query:
+                    optimal[i][j] = beliefs[i][j] / distances[i][j]
         print("Optimal cells:\n", optimal)
 
         # find largest value in optimal, and search that cell next
@@ -382,15 +383,34 @@ def agent3(board, target):
         for i in range(dim):
             for j in range(dim):
                 if optimal[i][j] > largest:
-                    largest = optimal
-                    nextSearch = [i][j]
+                    largest = optimal[i][j]
+                    nextSearch = [i,j]
         print("The best cell to search next is :\n", nextSearch)
         print("Distance to the next cell is:\n", distances[nextSearch[0]][nextSearch[1]])
         moves+=1
         distanceTravelled+=distances[nextSearch[0]][nextSearch[1]]
+        print("\nQuery: ", query)
+        print("Distance: ", distances[nextSearch[0]][nextSearch[1]])
+
         query = nextSearch
-        
-    return 0
+
+        # get probability at cell & terrain type
+        prob = beliefs[query[0], query[1]]
+        terrain = (int)(board[query[0], query[1]])
+
+        if terrain == 0:
+            found = random.randint(1, 10) > 1
+        elif terrain == 1:
+            found = random.randint(1, 10) > 3
+        elif terrain == 2:
+            found = random.randint(1, 10) > 7
+        elif terrain == 3:
+            found = random.randint(1, 10) > 9
+
+        targetfound = (query == target) and found
+
+    return moves, distanceTravelled
+
     
 
 dimension = 4
