@@ -293,12 +293,103 @@ def agent2(board, target):
 
 
 def agent3(board, target):
-
     '''
     Both agents are kinda shit
     hopefully this one doesn't disappoint
     '''
+    dim = len(board[0])
 
+    # create initial probablity grid
+    beliefs = np.zeros((dim, dim))
+    # create a distance array to track distance(Manhattan) from current cell to all other cells
+    distances = np.zeros((dim, dim))
+    # create array of optimal cells to search
+    optimal = np.zeros((dim, dim))
+    for i in range(dim):
+        for j in range(dim):
+            beliefs[i, j] = 1 / (dim * dim)
+    print("Beliefs: \n", beliefs)
+
+    moves = 1
+    distanceTravelled = 0
+
+    # get initial query at random
+    query = [random.randint(0, dim - 1), random.randint(0, dim - 1)]
+    print("\nQuery: ", query)
+
+    # get probability at cell & terrain type
+    prob = beliefs[query[0], query[1]]
+    terrain = (int)(board[query[0], query[1]])
+    found = False
+
+    # find target with probability based on terrain
+    if terrain == 0:
+        found = random.randint(1, 10) > 1
+    elif terrain == 1:
+        found = random.randint(1, 10) > 3
+    elif terrain == 2:
+        found = random.randint(1, 10) > 7
+    elif terrain == 3:
+        found = random.randint(1, 10) > 9
+
+    targetfound = (query == target) and found
+
+    # loop and continue querying
+    while not targetfound:
+        probNeg = 0
+        if terrain == 0:
+            probNeg = .1
+        elif terrain == 1:
+            probNeg = .3
+        elif terrain == 2:
+            probNeg = .7
+        elif terrain == 3:
+            probNeg = .9
+
+        # update probability on found cell
+        print("Prob: ", prob, "Terrain: ", terrain)
+        beliefs[query[0], query[1]] = probNeg * beliefs[query[0], query[1]]
+
+        # sum all probs
+        totalBelief = 0
+        for i in range(dim):
+            for j in range(dim):
+                totalBelief += beliefs[i, j]
+        # update belief table
+        for i in range(dim):
+            for j in range(dim):
+                beliefs[i, j] /= totalBelief
+        print("New Beliefs:\n", beliefs)
+
+        # update cell distances
+        for i in range(dim):
+            for j in range(dim):
+                if not [i, j] == query:
+                    distances[i][j] = abs(query[0] - i) + abs(query[1] - j)
+                else:
+                    distances[i][j] = 0
+        print("New distances:\n", distances)
+
+        # update optimal matrix to determine which cell to search next based on belief and distance
+        for i in range(dim):
+            for j in range(dim):
+                optimal[i][j] = beliefs[i][j] / distances[i][j]
+        print("Optimal cells:\n", optimal)
+
+        # find largest value in optimal, and search that cell next
+        largest = 0
+        nextSearch = [-1][-1]
+        for i in range(dim):
+            for j in range(dim):
+                if optimal[i][j] > largest:
+                    largest = optimal
+                    nextSearch = [i][j]
+        print("The best cell to search next is :\n", nextSearch)
+        print("Distance to the next cell is:\n", distances[nextSearch[0]][nextSearch[1]])
+        moves+=1
+        distanceTravelled+=distances[nextSearch[0]][nextSearch[1]]
+        query = nextSearch
+        
     return 0
     
 
