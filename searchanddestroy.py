@@ -303,8 +303,6 @@ def agent3(board, target):
     beliefs = np.zeros((dim, dim))
     # create a distance array to track distance(Manhattan) from current cell to all other cells
     distances = np.zeros((dim, dim))
-    # create array of optimal cells to search
-    optimal = np.zeros((dim, dim))
     for i in range(dim):
         for j in range(dim):
             beliefs[i, j] = 1 / (dim * dim)
@@ -315,7 +313,7 @@ def agent3(board, target):
 
     # get initial query at random
     query = [random.randint(0, dim - 1), random.randint(0, dim - 1)]
-    print("\nQuery: ", query)
+    print("Query:\n", query)
 
     # get probability at cell & terrain type
     prob = beliefs[query[0], query[1]]
@@ -347,28 +345,35 @@ def agent3(board, target):
             probNeg = .9
 
         # update probability on found cell
-        print("Prob: ", prob, "Terrain: ", terrain)
-        beliefs[query[0], query[1]] = probNeg * beliefs[query[0], query[1]]
+        print("Prob: ", prob, "   Terrain: ", terrain)
+        beliefs[query[0], query[1]] *= probNeg
 
         # sum all probs
         totalBelief = 0
         for i in range(dim):
             for j in range(dim):
-                totalBelief += beliefs[i, j]
-        # update belief table
+                totalBelief += beliefs[i][j]
+        print("Total beliefs sum to:\n",totalBelief)
+
+        # normalize
+        newSum = 0
         for i in range(dim):
             for j in range(dim):
-                beliefs[i, j] /= totalBelief
+                beliefs[i][j] /= totalBelief
+                newSum+=beliefs[i][j]
         print("New Beliefs:\n", beliefs)
+        print("Total should be 1:\n", newSum)
 
-        # update cell distances
+        # calculate distances
         for i in range(dim):
             for j in range(dim):
                 if not [i, j] == query:
                     distances[i][j] = abs(query[0] - i) + abs(query[1] - j)
                 else:
                     distances[i][j] = 0
-        print("New distances:\n", distances)
+
+        # create array of optimal cells to search
+        optimal = np.zeros((dim, dim))
 
         # update optimal matrix to determine which cell to search next based on belief and distance
         for i in range(dim):
@@ -387,14 +392,12 @@ def agent3(board, target):
                     nextSearch = [i,j]
         print("The best cell to search next is :\n", nextSearch)
         print("Distance to the next cell is:\n", distances[nextSearch[0]][nextSearch[1]])
-        moves+=1
-        distanceTravelled+=distances[nextSearch[0]][nextSearch[1]]
-        print("\nQuery: ", query)
-        print("Distance: ", distances[nextSearch[0]][nextSearch[1]])
-
         query = nextSearch
+        moves += 1
+        distanceTravelled += distances[nextSearch[0]][nextSearch[1]]
+        print("\nQuery:", query)
 
-        # get probability at cell & terrain type
+        # get probability at cell & terrain types of query
         prob = beliefs[query[0], query[1]]
         terrain = (int)(board[query[0], query[1]])
 
@@ -410,7 +413,6 @@ def agent3(board, target):
         targetfound = (query == target) and found
 
     return moves, distanceTravelled
-
     
 
 dimension = 4
