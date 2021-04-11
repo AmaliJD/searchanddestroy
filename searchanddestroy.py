@@ -14,12 +14,12 @@ P(fail | T in cell)
 0.9 caves
 '''
 
+
 def generateBoard(dim, board):
-    
     for i in range(dim):
         for j in range(dim):
-            board[i,j] = random.randint(0, 3)
-            
+            board[i, j] = random.randint(0, 3)
+
     return board
 
 
@@ -35,15 +35,15 @@ def getProbabilityOnFail(p, terrain):
     elif terrain == 3:
         probNeg = .9
 
-    P = (p*probNeg) / ((p*probNeg) + (1-p))
-    denom = (p*probNeg) + (1-p)
+    P = (p * probNeg) / ((p * probNeg) + (1 - p))
+    denom = (p * probNeg) + (1 - p)
     return P, denom
 
 
 def getNeighbors(board, cell):
     neighbors = []
     dim = len(board[0])
-    
+
     if (cell[1] < dim - 1):
         neighbors.append([cell[0], cell[1] + 1])
     if (cell[0] < dim - 1):
@@ -52,7 +52,7 @@ def getNeighbors(board, cell):
         neighbors.append([cell[0], cell[1] - 1])
     if (cell[0] > 0):
         neighbors.append([cell[0] - 1, cell[1]])
-            
+
     return neighbors
 
 
@@ -63,8 +63,8 @@ def getFindBoard(board, beliefs):
 
     for i in range(dim):
         for j in range(dim):
-            terrain = board[i,j]
-            
+            terrain = board[i, j]
+
             if terrain == 0:
                 probNeg = .1
             elif terrain == 1:
@@ -73,10 +73,11 @@ def getFindBoard(board, beliefs):
                 probNeg = .7
             elif terrain == 3:
                 probNeg = .9
-            
-            find[i,j] = beliefs[i,j] * (1-probNeg)
-    
+
+            find[i, j] = beliefs[i, j] * (1 - probNeg)
+
     return find
+
 
 def update_and_normalize(cell, terrain, beliefs):
     dim = len(beliefs)
@@ -91,7 +92,7 @@ def update_and_normalize(cell, terrain, beliefs):
     elif terrain == 3:
         probNeg = .9
 
-    #update curr cell
+    # update curr cell
     beliefs[cell[0], cell[1]] *= probNeg
 
     # sum all probs
@@ -107,6 +108,7 @@ def update_and_normalize(cell, terrain, beliefs):
 
     return beliefs
 
+
 # agents are given the same start query
 def agent1(board, target):
     dim = len(board[0])
@@ -115,14 +117,14 @@ def agent1(board, target):
     beliefs = np.zeros((dim, dim))
     for i in range(dim):
         for j in range(dim):
-            beliefs[i,j] = 1/(dim*dim)
-    print("Beliefs: \n",beliefs)
+            beliefs[i, j] = 1 / (dim * dim)
+    print("Beliefs: \n", beliefs)
 
     moves = 1
     distanceTravelled = 0
 
     # get initial query at random
-    query = [random.randint(0, dim-1), random.randint(0, dim-1)]
+    query = [random.randint(0, dim - 1), random.randint(0, dim - 1)]
     print("\nQuery: ", query)
 
     # get probability at cell & terrain type
@@ -144,7 +146,7 @@ def agent1(board, target):
 
     # loop and continue querying
     while not targetfound:
-        
+
         # update probability on found cell
         print("Prob: ", prob, "Terrain: ", terrain)
         beliefs[query[0], query[1]], denominator = getProbabilityOnFail(prob, terrain)
@@ -152,13 +154,11 @@ def agent1(board, target):
         # update rest of cells probabillity
         for i in range(dim):
             for j in range(dim):
-                if not [i,j] == query:
+                if not [i, j] == query:
                     prob_i = beliefs[i, j]
                     beliefs[i, j] = prob_i / denominator
 
         print("New Beliefs:\n", beliefs)
-
-
 
         ''' get new query '''
         # query from neighbor with highest probability of having target
@@ -207,13 +207,15 @@ def agent1(board, target):
             found = random.randint(1, 10) > 9
 
         targetfound = (query == target) and found
-    
+
     return moves, distanceTravelled
 
 
 '''
 Agent 2 is exactly like agent 1 except it's criteria for choosing a new cell to query
 '''
+
+
 def agent2(board, target):
     dim = len(board[0])
 
@@ -221,14 +223,14 @@ def agent2(board, target):
     beliefs = np.zeros((dim, dim))
     for i in range(dim):
         for j in range(dim):
-            beliefs[i,j] = 1/(dim*dim)
-    print("Beliefs: \n",beliefs)
+            beliefs[i, j] = 1 / (dim * dim)
+    print("Beliefs: \n", beliefs)
 
     moves = 1
     distanceTravelled = 0
 
     # get initial query at random
-    query = [random.randint(0, dim-1), random.randint(0, dim-1)]
+    query = [random.randint(0, dim - 1), random.randint(0, dim - 1)]
     print("\nQuery: ", query)
 
     # get probability at cell & terrain type
@@ -250,7 +252,7 @@ def agent2(board, target):
 
     # loop and continue querying
     while not targetfound:
-        
+
         # update probability on found cell
         print("Prob: ", prob, "Terrain: ", terrain)
         beliefs[query[0], query[1]], denominator = getProbabilityOnFail(prob, terrain)
@@ -258,19 +260,17 @@ def agent2(board, target):
         # update rest of cells probabillity
         for i in range(dim):
             for j in range(dim):
-                if not [i,j] == query:
+                if not [i, j] == query:
                     prob_i = beliefs[i, j]
                     beliefs[i, j] = prob_i / denominator
 
         print("New Beliefs:\n", beliefs)
 
-
-
         ''' get new query '''
         # generate find probability board
         findBoard = getFindBoard(board, beliefs)
         print("Find Prob:\n", findBoard)
-        
+
         # query from neighbor with highest probability of FINDING target
         maxProbability = 0
         cell = query
@@ -293,7 +293,7 @@ def agent2(board, target):
                         cell = [i, j]
                     elif dist2 == dist1 and random.randint(0, 1) == 0:
                         cell = [i, j]
-                
+
         dist = abs(query[0] - cell[0]) + abs(query[1] - cell[1])
         query = cell
         print("\nQuery: ", query)
@@ -317,7 +317,7 @@ def agent2(board, target):
             found = random.randint(1, 10) > 9
 
         targetfound = (query == target) and found
-    
+
     return moves, distanceTravelled
 
 
@@ -382,15 +382,15 @@ def agent3(board, target):
         for i in range(dim):
             for j in range(dim):
                 totalBelief += beliefs[i][j]
-        print("Total beliefs sum to:\n",totalBelief)
+        print("Total beliefs sum to:\n", totalBelief)
 
-        #track total sum of beliefs
+        # track total sum of beliefs
         newSum = 0
         # normalize
         for i in range(dim):
             for j in range(dim):
                 beliefs[i][j] /= totalBelief
-                newSum+=beliefs[i][j]
+                newSum += beliefs[i][j]
         print("New Beliefs:\n", beliefs)
         print("Total should be 1:\n", newSum)
 
@@ -419,7 +419,7 @@ def agent3(board, target):
             for j in range(dim):
                 if optimal[i][j] > largest:
                     largest = optimal[i][j]
-                    nextSearch = [i,j]
+                    nextSearch = [i, j]
 
         print("The best cell to search next is :\n", nextSearch)
         print("Distance to the next cell is:\n", distances[nextSearch[0]][nextSearch[1]])
@@ -434,22 +434,22 @@ def agent3(board, target):
         x = query[0] - prevCell[0]
         y = query[1] - prevCell[1]
         print("Must move x: ", x, "y: ", y)
-        #move x then y
+        # move x then y
         for i in range(abs(x)):
             if x < 0:
-                path1[1]+=beliefs[prevCell[0]-i][prevCell[1]]
-                path1[0].append([prevCell[0]-i, prevCell[1]])
+                path1[1] += beliefs[prevCell[0] - i][prevCell[1]]
+                path1[0].append([prevCell[0] - i, prevCell[1]])
             else:
-                path1[1] += beliefs[prevCell[0]+i][prevCell[1]]
-                path1[0].append([prevCell[0]+i, prevCell[1]])
+                path1[1] += beliefs[prevCell[0] + i][prevCell[1]]
+                path1[0].append([prevCell[0] + i, prevCell[1]])
         for i in range(abs(y)):
             if y < 0:
-                path1[1] += beliefs[prevCell[0]][prevCell[1]-i]
-                path1[0].append([prevCell[0], prevCell[1]-i])
+                path1[1] += beliefs[prevCell[0]][prevCell[1] - i]
+                path1[0].append([prevCell[0], prevCell[1] - i])
             else:
-                path1[1] += beliefs[prevCell[0]][prevCell[1]+i]
-                path1[0].append([prevCell[0], prevCell[1]+i])
-        #move y then x
+                path1[1] += beliefs[prevCell[0]][prevCell[1] + i]
+                path1[0].append([prevCell[0], prevCell[1] + i])
+        # move y then x
         for i in range(abs(y)):
             if y < 0:
                 path1[1] += beliefs[prevCell[0]][prevCell[1] - i]
@@ -465,7 +465,7 @@ def agent3(board, target):
                 path1[1] += beliefs[prevCell[0] + i][prevCell[1]]
                 path1[0].append([prevCell[0] + i, prevCell[1]])
 
-       #pick best path based on highest total beliefs along path
+        # pick best path based on highest total beliefs along path
         if path1[1] > path2[1]:
             path = path1
         elif path2[1] > path1[1]:
@@ -515,12 +515,11 @@ def agent3(board, target):
 
     return moves, distanceTravelled
 
-    
 
-dimension = 4
+dimension = 20
 board = np.zeros((dimension, dimension))
 board = generateBoard(dimension, board)
-target = [random.randint(0, dimension-1), random.randint(0, dimension-1)]
+target = [random.randint(0, dimension - 1), random.randint(0, dimension - 1)]
 
 print(board)
 print("Target: ", target, "\n")
@@ -528,7 +527,9 @@ print("Target: ", target, "\n")
 a1moves, a1dist = agent1(board, target)
 print("\n\n")
 a2moves, a2dist = agent2(board, target)
+print("\n\n")
+a3moves, a3dist = agent3(board, target)
 
-print("\nagent1 Moves: ", a1moves, "\nagent2 Moves: ", a2moves)
-print("\nagent1 Distance: ", a1dist, "\nagent2 Distance: ", a2dist)
-print("\nagent1 Final Score: ", a1moves+a1dist, "\nagent2 Final Score: ", a2moves+a2dist)
+print("\nagent1 Moves: ", a1moves, "\nagent2 Moves: ", a2moves, "\nagent3 Moves: ", a3moves)
+print("\nagent1 Distance: ", a1dist, "\nagent2 Distance: ", a2dist, "\nagent3 Distance: ", a3dist)
+print("\nagent1 Final Score: ", a1moves + a1dist, "\nagent2 Final Score: ", a2moves + a2dist, "\nagent3 Final Score: ", a3moves + a3dist)
