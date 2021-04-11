@@ -78,6 +78,35 @@ def getFindBoard(board, beliefs):
     
     return find
 
+def update_and_normalize(cell, terrain, beliefs):
+    dim = len(beliefs)
+
+    probNeg = 0
+    if terrain == 0:
+        probNeg = .1
+    elif terrain == 1:
+        probNeg = .3
+    elif terrain == 2:
+        probNeg = .7
+    elif terrain == 3:
+        probNeg = .9
+
+    #update curr cell
+    beliefs[cell[0], cell[1]] *= probNeg
+
+    # sum all probs
+    totalBelief = 0
+    for i in range(dim):
+        for j in range(dim):
+            totalBelief += beliefs[i][j]
+
+    # normalize
+    for i in range(dim):
+        for j in range(dim):
+            beliefs[i][j] /= totalBelief
+
+    return beliefs
+
 # agents are given the same start query
 def agent1(board, target):
     dim = len(board[0])
@@ -355,8 +384,9 @@ def agent3(board, target):
                 totalBelief += beliefs[i][j]
         print("Total beliefs sum to:\n",totalBelief)
 
-        # normalize
+        #track total sum of beliefs
         newSum = 0
+        # normalize
         for i in range(dim):
             for j in range(dim):
                 beliefs[i][j] /= totalBelief
@@ -390,11 +420,82 @@ def agent3(board, target):
                 if optimal[i][j] > largest:
                     largest = optimal[i][j]
                     nextSearch = [i,j]
+
         print("The best cell to search next is :\n", nextSearch)
         print("Distance to the next cell is:\n", distances[nextSearch[0]][nextSearch[1]])
+
+        prevCell = query
         query = nextSearch
+        nextBelief = beliefs[query[0]][query[1]]
+
+        # determine best route to next query so other cells can be searched
+        path1 = [[], 0]
+        path2 = [[], 0]
+        x = query[0] - prevCell[0]
+        y = query[1] - prevCell[1]
+        print("Must move x: ", x, "y: ", y)
+        #move x then y
+        for i in range(abs(x)):
+            if x < 0:
+                path1[1]+=beliefs[prevCell[0]-i][prevCell[1]]
+                path1[0].append([prevCell[0]-i, prevCell[1]])
+            else:
+                path1[1] += beliefs[prevCell[0]+i][prevCell[1]]
+                path1[0].append([prevCell[0]+i, prevCell[1]])
+        for i in range(abs(y)):
+            if y < 0:
+                path1[1] += beliefs[prevCell[0]][prevCell[1]-i]
+                path1[0].append([prevCell[0], prevCell[1]-i])
+            else:
+                path1[1] += beliefs[prevCell[0]][prevCell[1]+i]
+                path1[0].append([prevCell[0], prevCell[1]+i])
+        #move y then x
+        for i in range(abs(y)):
+            if y < 0:
+                path1[1] += beliefs[prevCell[0]][prevCell[1] - i]
+                path1[0].append([prevCell[0], prevCell[1] - i])
+            else:
+                path1[1] += beliefs[prevCell[0]][prevCell[1] + i]
+                path1[0].append([prevCell[0], prevCell[1] + i])
+        for i in range(abs(x)):
+            if x < 0:
+                path1[1] += beliefs[prevCell[0] - i][prevCell[1]]
+                path1[0].append([prevCell[0] - i, prevCell[1]])
+            else:
+                path1[1] += beliefs[prevCell[0] + i][prevCell[1]]
+                path1[0].append([prevCell[0] + i, prevCell[1]])
+
+       #pick best path based on highest total beliefs along path
+        if path1[1] > path2[1]:
+            path = path1
+        elif path2[1] > path1[1]:
+            path = path2
+        else:
+            path = path1
+
+        for c in path[0]:
+            if [c[0], c[1]] != query:
+                if beliefs[c[0]][c[1]] > nextBelief:
+                    moves += 1
+                    distanceTravelled+=1
+                    t = (int)(board[query[0], query[1]])
+                    if t == 0:
+                        found = random.randint(1, 10) > 1
+                    elif t == 1:
+                        found = random.randint(1, 10) > 3
+                    elif t == 2:
+                        found = random.randint(1, 10) > 7
+                    elif t == 3:
+                        found = random.randint(1, 10) > 9
+
+                    if ([c[0], c[1]] == target) and found:
+                        return moves, distanceTravelled
+
+                    beliefs = update_and_normalize([c[0], c[1]], t, beliefs)
+
+
         moves += 1
-        distanceTravelled += distances[nextSearch[0]][nextSearch[1]]
+        #distanceTravelled += distances[nextSearch[0]][nextSearch[1]]
         print("\nQuery:", query)
 
         # get probability at cell & terrain types of query
@@ -413,6 +514,7 @@ def agent3(board, target):
         targetfound = (query == target) and found
 
     return moves, distanceTravelled
+
     
 
 dimension = 4
