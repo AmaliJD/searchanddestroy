@@ -474,10 +474,11 @@ def agent3(board, target):
             path = path1
 
         for c in path[0]:
+            distanceTravelled += 1
             if [c[0], c[1]] != query:
                 if beliefs[c[0]][c[1]] > nextBelief:
                     moves += 1
-                    distanceTravelled+=1
+
                     t = (int)(board[query[0], query[1]])
                     if t == 0:
                         found = random.randint(1, 10) > 1
@@ -493,9 +494,8 @@ def agent3(board, target):
 
                     beliefs = update_and_normalize([c[0], c[1]], t, beliefs)
 
-
         moves += 1
-        #distanceTravelled += distances[nextSearch[0]][nextSearch[1]]
+        distanceTravelled += 1
         print("\nQuery:", query)
 
         # get probability at cell & terrain types of query
